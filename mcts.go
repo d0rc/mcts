@@ -21,15 +21,25 @@ type Node struct {
 
 // Config holds the MCTS configuration parameters
 type Config struct {
-	ExplorationConstant float64
-	MaxIterations       int
-	TargetSeqLength     int
-	RandomSeed          int64
-	DebugLevel          int
+	ExplorationConstant  float64
+	MaxIterations        int
+	TargetSeqLength      int // Set to -1 to use IsSequenceTerminated instead
+	RandomSeed           int64
+	DebugLevel           int
+	IsSequenceTerminated func(sequence []interface{}) bool
+	SequenceToString     func(sequence []interface{}) string // New field for custom sequence string conversion
 }
 
 type NextElementsFunc func(sequence []interface{}) []interface{}
 type FitnessFunc func(sequence []interface{}) float64
+
+// isSequenceComplete checks if the sequence should stop growing
+func isSequenceComplete(sequence []interface{}, config Config) bool {
+	if config.TargetSeqLength != -1 {
+		return len(sequence) >= config.TargetSeqLength
+	}
+	return config.IsSequenceTerminated != nil && config.IsSequenceTerminated(sequence)
+}
 
 // Run executes the MCTS algorithm
 func Run(
@@ -40,6 +50,10 @@ func Run(
 ) ([]interface{}, error) {
 	if config.ExplorationConstant == 0 {
 		config.ExplorationConstant = 1.41
+	}
+
+	if config.TargetSeqLength == -1 && config.IsSequenceTerminated == nil {
+		return nil, fmt.Errorf("when TargetSeqLength is -1, IsSequenceTerminated function must be provided")
 	}
 
 	rand.Seed(config.RandomSeed)
@@ -56,7 +70,7 @@ func Run(
 	// Main MCTS loop
 	for i := 0; i < config.MaxIterations; i++ {
 		// Selection phase
-		selected := selection(root, config.ExplorationConstant, config.TargetSeqLength)
+		selected := selection(root, config.ExplorationConstant, config)
 
 		// Expansion phase
 		expanded := expansion(selected, nextElements)
@@ -65,14 +79,14 @@ func Run(
 		}
 
 		// Simulation phase
-		simulatedSeq := simulation(expanded, nextElements, config.TargetSeqLength)
+		simulatedSeq := simulation(expanded, nextElements, config)
 		fitness := fitnessFunc(simulatedSeq)
 
 		// Backpropagation phase
 		backpropagate(expanded, fitness)
 
 		// Update best found solution
-		if len(simulatedSeq) == config.TargetSeqLength && fitness < bestFitness {
+		if isSequenceComplete(simulatedSeq, config) && fitness < bestFitness {
 			bestFitness = fitness
 			bestSequence = make([]interface{}, len(simulatedSeq))
 			copy(bestSequence, simulatedSeq)
@@ -88,20 +102,20 @@ func Run(
 				TotalNodes:   countNodes(root),
 				Time:         time.Since(startTime),
 			}
-			printProgress(stats, config.DebugLevel)
+			printProgress(stats, config)
 		}
 	}
 
 	// If no valid sequence was found, build one
 	if bestSequence == nil {
-		bestSequence = buildSequence(initialSequence, nextElements, config.TargetSeqLength)
+		bestSequence = buildSequence(initialSequence, nextElements, config)
 	}
 
 	return bestSequence, nil
 }
 
-func selection(node *Node, explorationConstant float64, targetLength int) *Node {
-	for len(node.sequence) < targetLength && len(node.children) > 0 {
+func selection(node *Node, explorationConstant float64, config Config) *Node {
+	for !isSequenceComplete(node.sequence, config) && len(node.children) > 0 {
 		node.mu.Lock()
 		var selected *Node
 		bestUCT := math.MaxFloat64
@@ -126,7 +140,7 @@ func selection(node *Node, explorationConstant float64, targetLength int) *Node 
 	return node
 }
 
-// In MCTS code, calculateUCT is using minimization:
+// calculateUCT remains unchanged
 func calculateUCT(node *Node, explorationConstant float64) float64 {
 	if node.visits == 0 {
 		return -math.MaxFloat64
@@ -134,9 +148,10 @@ func calculateUCT(node *Node, explorationConstant float64) float64 {
 
 	exploitation := node.totalFitness / float64(node.visits)
 	exploration := explorationConstant * math.Sqrt(math.Log(float64(node.parent.visits))/float64(node.visits))
-	return exploitation - exploration // Note: we're minimizing here
+	return exploitation - exploration
 }
 
+// expansion remains unchanged
 func expansion(node *Node, nextElements NextElementsFunc) *Node {
 	node.mu.Lock()
 	defer node.mu.Unlock()
@@ -152,11 +167,9 @@ func expansion(node *Node, nextElements NextElementsFunc) *Node {
 	moveIndex := rand.Intn(len(node.unusedMoves))
 	move := node.unusedMoves[moveIndex]
 
-	// Remove used move
 	node.unusedMoves[moveIndex] = node.unusedMoves[len(node.unusedMoves)-1]
 	node.unusedMoves = node.unusedMoves[:len(node.unusedMoves)-1]
 
-	// Create new sequence
 	newSequence := make([]interface{}, len(node.sequence)+1)
 	copy(newSequence, node.sequence)
 	newSequence[len(node.sequence)] = move
@@ -170,11 +183,11 @@ func expansion(node *Node, nextElements NextElementsFunc) *Node {
 	return child
 }
 
-func simulation(node *Node, nextElements NextElementsFunc, targetLength int) []interface{} {
+func simulation(node *Node, nextElements NextElementsFunc, config Config) []interface{} {
 	sequence := make([]interface{}, len(node.sequence))
 	copy(sequence, node.sequence)
 
-	for len(sequence) < targetLength {
+	for !isSequenceComplete(sequence, config) {
 		moves := nextElements(sequence)
 		if len(moves) == 0 {
 			break
@@ -186,6 +199,7 @@ func simulation(node *Node, nextElements NextElementsFunc, targetLength int) []i
 	return sequence
 }
 
+// backpropagate remains unchanged
 func backpropagate(node *Node, fitness float64) {
 	for node != nil {
 		node.mu.Lock()
@@ -196,12 +210,12 @@ func backpropagate(node *Node, fitness float64) {
 	}
 }
 
-// buildSequence creates a valid sequence if MCTS failed to find one
-func buildSequence(initial []interface{}, nextElements NextElementsFunc, targetLength int) []interface{} {
+// buildSequence updated to use the new termination logic
+func buildSequence(initial []interface{}, nextElements NextElementsFunc, config Config) []interface{} {
 	sequence := make([]interface{}, len(initial))
 	copy(sequence, initial)
 
-	for len(sequence) < targetLength {
+	for !isSequenceComplete(sequence, config) {
 		moves := nextElements(sequence)
 		if len(moves) == 0 {
 			break
@@ -212,7 +226,7 @@ func buildSequence(initial []interface{}, nextElements NextElementsFunc, targetL
 	return sequence
 }
 
-// Helper functions remain the same...
+// Helper functions remain unchanged...
 func getTreeDepth(node *Node) int {
 	if len(node.children) == 0 {
 		return 0
@@ -244,14 +258,18 @@ type ProgressStats struct {
 	Time         time.Duration
 }
 
-func printProgress(stats ProgressStats, debugLevel int) {
+func printProgress(stats ProgressStats, config Config) {
 	fmt.Printf("\n=== Progress Report (Iteration %d) ===\n", stats.Iterations)
 	fmt.Printf("Best Fitness: %f\n", stats.BestFitness)
 	fmt.Printf("Time Elapsed: %v\n", stats.Time)
 
-	if debugLevel > 1 {
+	if config.DebugLevel > 1 {
 		fmt.Printf("Tree Depth: %d\n", stats.TreeDepth)
 		fmt.Printf("Total Nodes: %d\n", stats.TotalNodes)
-		fmt.Printf("Best Sequence: %v\n", stats.BestSequence)
+		if config.SequenceToString != nil {
+			fmt.Printf("Best Sequence: %s\n", config.SequenceToString(stats.BestSequence))
+		} else {
+			fmt.Printf("Best Sequence: %v\n", stats.BestSequence)
+		}
 	}
 }
