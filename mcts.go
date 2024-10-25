@@ -58,6 +58,7 @@ func Run(
 
 	rand.Seed(config.RandomSeed)
 	startTime := time.Now()
+	lastPrintTime := startTime
 
 	root := &Node{
 		sequence:    initialSequence,
@@ -93,7 +94,7 @@ func Run(
 		}
 
 		// Progress reporting
-		if config.DebugLevel > 0 && i%100 == 0 {
+		if config.DebugLevel > 0 && time.Since(lastPrintTime) > 1*time.Second {
 			stats := ProgressStats{
 				Iterations:   i + 1,
 				BestFitness:  bestFitness,
@@ -103,6 +104,7 @@ func Run(
 				Time:         time.Since(startTime),
 			}
 			printProgress(stats, config)
+			lastPrintTime = time.Now()
 		}
 	}
 
