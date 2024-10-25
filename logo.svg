@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+    <!-- Radial gradient background -->
+    <defs>
+        <radialGradient id="bg-gradient" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" style="stop-color:#1a365d"/>
+            <stop offset="100%" style="stop-color:#0f172a"/>
+        </radialGradient>
+
+        <!-- Glow effects -->
+        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+            <feMerge>
+                <feMergeNode in="blur"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+
+        <!-- Gradient for paths -->
+        <linearGradient id="path-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#60a5fa"/>
+            <stop offset="100%" style="stop-color:#3b82f6"/>
+        </linearGradient>
+
+        <!-- Gradient for success path -->
+        <linearGradient id="success-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#4ade80"/>
+            <stop offset="100%" style="stop-color:#22c55e"/>
+        </linearGradient>
+
+        <!-- Particle effects -->
+        <filter id="particle-blur" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="1"/>
+        </filter>
+    </defs>
+
+    <!-- Background circle -->
+    <circle cx="200" cy="200" r="190" fill="url(#bg-gradient)" />
+
+    <!-- Decorative rings -->
+    <circle cx="200" cy="200" r="180" fill="none" stroke="#1e40af" stroke-width="1" opacity="0.3"/>
+    <circle cx="200" cy="200" r="170" fill="none" stroke="#1e40af" stroke-width="1" opacity="0.2"/>
+
+    <!-- Grid pattern -->
+    <path d="M50,200 H350 M200,50 V350" stroke="#1e40af" stroke-width="1" opacity="0.2"/>
+    <path d="M100,100 L300,300 M100,300 L300,100" stroke="#1e40af" stroke-width="1" opacity="0.2"/>
+
+    <!-- Connection lines with gradient -->
+    <g filter="url(#glow)">
+        <!-- First level -->
+        <path d="M200 120 L140 200 M200 120 L260 200"
+              stroke="url(#path-gradient)" stroke-width="3" opacity="0.8"/>
+
+        <!-- Second level -->
+        <path d="M140 200 L100 280 M140 200 L180 280"
+              stroke="url(#path-gradient)" stroke-width="2" opacity="0.7"/>
+        <path d="M260 200 L220 280 M260 200 L300 280"
+              stroke="url(#path-gradient)" stroke-width="2" opacity="0.7"/>
+    </g>
+
+    <!-- Success path with special effect -->
+    <path d="M200 120 L260 200 L300 280"
+          stroke="url(#success-gradient)" stroke-width="4"
+          filter="url(#glow)" opacity="0.9"
+          stroke-linecap="round"/>
+
+    <!-- Nodes -->
+    <g filter="url(#glow)">
+        <!-- Root node -->
+        <circle cx="200" cy="120" r="25" fill="#3b82f6" stroke="#60a5fa" stroke-width="3"/>
+
+        <!-- Level 1 nodes -->
+        <circle cx="140" cy="200" r="20" fill="#2563eb" stroke="#60a5fa" stroke-width="2"/>
+        <circle cx="260" cy="200" r="20" fill="#2563eb" stroke="#60a5fa" stroke-width="2"/>
+
+        <!-- Level 2 nodes -->
+        <circle cx="100" cy="280" r="15" fill="#1d4ed8" stroke="#60a5fa" stroke-width="2"/>
+        <circle cx="180" cy="280" r="15" fill="#1d4ed8" stroke="#60a5fa" stroke-width="2"/>
+        <circle cx="220" cy="280" r="15" fill="#1d4ed8" stroke="#60a5fa" stroke-width="2"/>
+        <circle cx="300" cy="280" r="15" fill="#1d4ed8" stroke="#60a5fa" stroke-width="2"/>
+    </g>
+
+    <!-- Monte Carlo particles -->
+    <g filter="url(#particle-blur)">
+        <circle cx="110" cy="320" r="3" fill="#60a5fa" opacity="0.6"/>
+        <circle cx="190" cy="320" r="3" fill="#60a5fa" opacity="0.6"/>
+        <circle cx="230" cy="320" r="3" fill="#60a5fa" opacity="0.6"/>
+        <circle cx="310" cy="320" r="3" fill="#60a5fa" opacity="0.6"/>
+
+        <!-- Additional floating particles -->
+        <circle cx="150" cy="150" r="2" fill="#60a5fa" opacity="0.4"/>
+        <circle cx="250" cy="150" r="2" fill="#60a5fa" opacity="0.4"/>
+        <circle cx="170" cy="250" r="2" fill="#60a5fa" opacity="0.4"/>
+        <circle cx="270" cy="250" r="2" fill="#60a5fa" opacity="0.4"/>
+    </g>
+
+    <!-- Success node highlight -->
+    <circle cx="300" cy="280" r="18" fill="none" stroke="#4ade80" stroke-width="3" opacity="0.8"/>
+</svg>
