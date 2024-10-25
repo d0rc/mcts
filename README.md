@@ -2,12 +2,12 @@
 
 A flexible and efficient implementation of Monte Carlo Tree Search in Go, designed for sequence optimization problems with variable-length solutions.
 
-![Logo](logo.svg){: style="width:100px; height:auto;" }
+<img src="logo.svg" width="100">
 
 ## Quick Start
 
 ```go
-import "github.com/yourusername/mcts"
+import "github.com/d0rc/mcts"
 
 // Define your problem by implementing two functions:
 // 1. NextElementsFunc - generates possible next elements
@@ -106,7 +106,7 @@ package main
 
 import (
     "fmt"
-    "github.com/yourusername/mcts"
+    "github.com/d0rc/mcts"
     "math"
     "time"
 )
